@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node --experimental-specifier-resolution=node web.js",
-    "dev": "NODE_ENV=development nodemon --experimental-specifier-resolution=node index.js | pino-pretty"
+    "dev": "NODE_ENV=development nodemon --experimental-specifier-resolution=node web.js"
   },
   "engines": {
     "node": "14"
