@@ -6,6 +6,8 @@ import logger from './server/middleware/logger';
 const app = express();
 
 app.use(bodyParser.json());
+app.use(logger);
+
 app.use('/', router);
 
 app.listen(process.env.PORT || 8080);
