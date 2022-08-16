@@ -32,16 +32,16 @@ const MOVES = {
   TurnRight: "R"
 };
 
-module.exports = function fight({ _links, arena }) {
+module.exports = function calculate({ _links, arena }) {
   const myUrl = _links.self.href;
-  console.log("🚀 ~ file: fight.js ~ line 37 ~ fight ~ myUrl", myUrl);
+  console.log("🚀 ~ myUrl", myUrl);
   const myState = arena.state[myUrl];
-  console.log("🚀 ~ file: fight.js ~ line 39 ~ fight ~ myState", myState);
+  console.log("🚀 ~ myState", myState);
   const [arenaXLength, arenaYLength] = arena.dims;
-  console.log("🚀 ~ file: fight.js ~ line 41 ~ fight ~ arena", arena.dims);
+  console.log("🚀 ~ arena", arena.dims);
   const arenaX = arenaXLength - 1;
   const arenaY = arenaYLength - 1;
-  console.log("🚀 ~ file: fight.js ~ line 42 ~ fight ~ arenaX", arenaX, arenaY);
+  console.log("🚀 ~ arenaX, arenaY", arenaX, arenaY);
 
   const othersState = Object.entries(arena.state).filter(([key]) => key !== myUrl).map(([key, val]) => {
     return { ...val, player: key };
@@ -126,6 +126,13 @@ module.exports = function fight({ _links, arena }) {
     if (wasHit) {
       //where is that player?
       if (moveConflict()) {
+        if (y === arenaY && direction === DIRECTIONS.West) {
+          //add additional check because of a bug:
+          //stuck between turn left and turn right
+          //conflicting with check in line 59
+          //if (y === arenaY && direction === DIRECTIONS.South)
+          return MOVES.TurnRight;
+        }
         return MOVES.TurnLeft;
       }
       return MOVES.Forward;

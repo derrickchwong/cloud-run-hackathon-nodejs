@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
-const fight = require('./fight')
+const calculate = require('./calculate');
 
 app.use(bodyParser.json());
 
@@ -11,7 +11,7 @@ app.get('/', function (req, res) {
 
 app.post('/', function (req, res) {
   console.log(req.body);
-  const result = fight(req.body);
+  const result = calculate(req.body);
   console.log('result', result);
   res.send(result);
 });
