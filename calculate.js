@@ -153,16 +153,14 @@ module.exports = function calculate({ _links, arena }, stuckStats) {
       });
     }
     
-    const inEdgeNotCornerX = x > 0 && x < arenaX;
-    const inEdgeNotCornerY = y > 0 && y < arenaY;
-    if (nearPlayers.length === 3 && (inEdgeNotCornerX || inEdgeNotCornerY)) {
+    const inCornerX = x === arenaX || x === 0;
+    const inCornerY = y === arenaY || y === 0;
+    if (nearPlayers.length === 3 && (Boolean(inCornerX ^ inCornerY))) {
       return nearPlayers.some((other) => {
         return other.direction == enemyDirectionTowardsMe;
       });
     }
 
-    const inCornerX = x === arenaX || x === 0;
-    const inCornerY = y === arenaY || y === 0;
     if (nearPlayers.length === 2 && (inCornerX && inCornerY)) {
       return nearPlayers.some((other) => {
         return other.direction == enemyDirectionTowardsMe;
