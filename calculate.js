@@ -32,9 +32,8 @@ const MOVES = {
   TurnRight: "R"
 };
 
-module.exports = function calculate({ _links, arena }) {
+module.exports = function calculate({ _links, arena }, stuckStats) {
   const myUrl = _links.self.href;
-  console.log("🚀 ~ myUrl", myUrl);
   const myState = arena.state[myUrl];
   console.log("🚀 ~ myState", myState);
   const [arenaXLength, arenaYLength] = arena.dims;
@@ -47,6 +46,17 @@ module.exports = function calculate({ _links, arena }) {
     return { ...val, player: key };
   });
   const { x, y, direction, wasHit, score } = myState;
+  
+  // Check "Stuck"-ness
+  if (x === stuckStats.prevX && y === stuckStats.prevY && score <= stuckStats.prevScore) {
+    stuckStats.stuckCount++;
+  } else {
+    stuckStats.stuckCount = 0;
+  }
+  stuckStats.prevX = x;
+  stuckStats.prevY = y;
+  stuckStats.prevScore = score;
+
   // 1. Face to the right direction (Do not stuck)
   // 2. Attack if there is someone in my direction
   // 3. If no one close, move
@@ -98,35 +108,79 @@ module.exports = function calculate({ _links, arena }) {
   });
 
   const moveConflict = () => {
-    let newx = x;
-    let newy = y;
+    let newX = x;
+    let newY = y;
     if (direction === DIRECTIONS.North) {
-      newy = y - 1;
+      newY = y - 1;
     }
     if (direction === DIRECTIONS.South) {
-      newy = y + 1;
+      newY = y + 1;
     }
     if (direction === DIRECTIONS.East) {
-      newx = x + 1;
+      newX = x + 1;
     }
     if (direction === DIRECTIONS.West) {
-      newx = x - 1;
+      newX = x - 1;
     }
 
     const conflict = nearPlayers.some((other) => {
-      return other.x === newx && other.y === newy;
-    })
+      return other.x === newX && other.y === newY;
+    });
     console.log("moveConflict ~ direction", direction);
-    console.log('moveConflict next position', newx, newy);
+    console.log('moveConflict next position', newX, newY);
     console.log("moveConflict ~ conflict", conflict);
     return conflict;
+  };
+
+  const cornered = () => {
+    let enemyDirectionTowardsMe;
+    if (direction === DIRECTIONS.North) {
+      enemyDirectionTowardsMe = DIRECTIONS.South;
+    }
+    if (direction === DIRECTIONS.South) {
+      enemyDirectionTowardsMe = DIRECTIONS.North;
+    }
+    if (direction === DIRECTIONS.East) {
+      enemyDirectionTowardsMe = DIRECTIONS.West;
+    }
+    if (direction === DIRECTIONS.West) {
+      enemyDirectionTowardsMe = DIRECTIONS.East;
+    }
+
+    if (nearPlayers.length >= 4) {
+      return nearPlayers.some((other) => {
+        return other.direction == enemyDirectionTowardsMe;
+      });
+    }
+    
+    const inEdgeNotCornerX = x > 0 && x < arenaX;
+    const inEdgeNotCornerY = y > 0 && y < arenaY;
+    if (nearPlayers.length === 3 && (inEdgeNotCornerX || inEdgeNotCornerY)) {
+      return nearPlayers.some((other) => {
+        return other.direction == enemyDirectionTowardsMe;
+      });
+    }
+
+    const inCornerX = x === arenaX || x === 0;
+    const inCornerY = y === arenaY || y === 0;
+    if (nearPlayers.length === 2 && (inCornerX && inCornerY)) {
+      return nearPlayers.some((other) => {
+        return other.direction == enemyDirectionTowardsMe;
+      });
+    }
+
+    return false;
   };
 
   if (canThrow) {
     if (wasHit) {
       //where is that player?
       if (moveConflict()) {
-        if (y === arenaY && direction === DIRECTIONS.West) {
+        if (stuckStats.stuckCount > 2 && cornered()) {
+          return MOVES.Throw;
+        }
+
+        if (y === arenaY) {
           //add additional check because of a bug:
           //stuck between turn left and turn right
           //conflicting with check in line 59
@@ -140,7 +194,7 @@ module.exports = function calculate({ _links, arena }) {
     return MOVES.Throw;
   } else {
     if (nearPlayers.length > 0 && !wasHit) {
-      if (y === arenaY && direction === DIRECTIONS.West) {
+      if (y === arenaY) {
         //add additional check because of a bug:
         //stuck between turn left and turn right
         //conflicting with check in line 59
