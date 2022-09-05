@@ -15,12 +15,12 @@ const MOVES = {
 module.exports = function calculate({ _links, arena }, stuckStats) {
   const myUrl = _links.self.href;
   const myState = arena.state[myUrl];
-  console.log("🚀 ~ myState", myState);
+  console.log("myState", myState);
   const [arenaXLength, arenaYLength] = arena.dims;
-  console.log("🚀 ~ arena", arena.dims);
+  console.log("arena", arena.dims);
   const arenaX = arenaXLength - 1;
   const arenaY = arenaYLength - 1;
-  console.log("🚀 ~ arenaX, arenaY", arenaX, arenaY);
+  console.log("arenaX, arenaY", arenaX, arenaY);
 
   const othersState = Object.entries(arena.state).filter(([key]) => key !== myUrl).map(([key, val]) => {
     return { ...val, player: key };
@@ -28,64 +28,25 @@ module.exports = function calculate({ _links, arena }, stuckStats) {
   const { x, y, direction, wasHit, score } = myState;
   
   // Check "Stuck"-ness
-  if (x === stuckStats.prevX && y === stuckStats.prevY && score <= stuckStats.prevScore) {
-    stuckStats.stuckCount++;
-  } else {
-    stuckStats.stuckCount = 0;
-  }
-  stuckStats.prevX = x;
-  stuckStats.prevY = y;
-  stuckStats.prevScore = score;
+  stuckStats = checkStuckness(x, y, score, stuckStats);
 
   // 1. Face to the right direction (Do not stuck)
   // 2. Attack if there is someone in my direction
   // 3. If no one close, move
 
   // Face to the right direction
-  if (y === 0 && direction === DIRECTIONS.North) {
-    if (x === 0) {
-      return MOVES.TurnRight;
-    }
-
-    return MOVES.TurnLeft;
-  }
-
-  if (y === arenaY && direction === DIRECTIONS.South) {
-    if (x === 0) {
-      return MOVES.TurnLeft;
-    }
-
-    return MOVES.TurnRight;
-  }
-
-  if (x === 0 && direction === DIRECTIONS.West) {
-    return MOVES.TurnLeft;
-  }
-
-  if (x === arenaX && direction === DIRECTIONS.East) {
-    return MOVES.TurnLeft;
+  let needToCorrectDirection = correctDirection(x, y, direction);
+  if (needToCorrectDirection) {
+    return needToCorrectDirection;
   }
 
   // Target the player
   const THROW_DISTANCE = 3;
-  const nearPlayers = othersState.filter((other) => {
+  const nearPlayers = othersState.filter(other => {
     return (Math.abs(other.x - x) <= THROW_DISTANCE && other.y === y) || (Math.abs(other.y - y) <= THROW_DISTANCE && other.x === x);
   });
   console.log("Nearplayers count ~ ", nearPlayers.length);
-  const canThrow = nearPlayers.some(other => {
-    if (direction === DIRECTIONS.East) {
-      return other.y === y && other.x > x;
-    }
-    if (direction === DIRECTIONS.West) {
-      return other.y === y && x > other.x;
-    }
-    if (direction === DIRECTIONS.North) {
-      return other.x === x && y > other.y;
-    }
-    if (direction === DIRECTIONS.South) {
-      return other.x === x && y < other.y;
-    }
-  });
+  const canThrow = nearPlayers.some(other => canThrowCalculationEachNearPlayer(other, x, y, direction));
 
   const moveConflict = () => {
     let newX = x;
@@ -185,5 +146,58 @@ module.exports = function calculate({ _links, arena }, stuckStats) {
       return MOVES.TurnLeft;
     }
     return MOVES.Forward;
+  }
+}
+
+function checkStuckness(x, y, score, stuckStats) {
+  if (x === stuckStats.prevX && y === stuckStats.prevY && score <= stuckStats.prevScore) {
+    stuckStats.stuckCount++;
+  } else {
+    stuckStats.stuckCount = 0;
+  }
+  stuckStats.prevX = x;
+  stuckStats.prevY = y;
+  stuckStats.prevScore = score;
+  return stuckStats;
+}
+
+function correctDirection(x, y, direction) {
+  if (y === 0 && direction === DIRECTIONS.North) {
+    if (x === 0) {
+      return MOVES.TurnRight;
+    }
+
+    return MOVES.TurnLeft;
+  }
+
+  if (y === arenaY && direction === DIRECTIONS.South) {
+    if (x === 0) {
+      return MOVES.TurnLeft;
+    }
+
+    return MOVES.TurnRight;
+  }
+
+  if (x === 0 && direction === DIRECTIONS.West) {
+    return MOVES.TurnLeft;
+  }
+
+  if (x === arenaX && direction === DIRECTIONS.East) {
+    return MOVES.TurnLeft;
+  }
+}
+
+function canThrowCalculationEachNearPlayer(other, x, y, direction) {
+  if (direction === DIRECTIONS.East) {
+    return other.y === y && other.x > x;
+  }
+  if (direction === DIRECTIONS.West) {
+    return other.y === y && x > other.x;
+  }
+  if (direction === DIRECTIONS.North) {
+    return other.x === x && y > other.y;
+  }
+  if (direction === DIRECTIONS.South) {
+    return other.x === x && y < other.y;
   }
 }
