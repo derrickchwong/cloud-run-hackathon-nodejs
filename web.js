@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
+const { response } = require('express');
 
 app.use(bodyParser.json());
 
@@ -14,7 +15,10 @@ app.post('/', function (req, res) {
   
   // TODO add your implementation here to replace the random response
   
-  res.send(moves[Math.floor(Math.random() * moves.length)]);
+  // res.send(moves[Math.floor(Math.random() * moves.length)]);
+
+  res.send('F');
+
 });
 
 app.listen(process.env.PORT || 8080);
